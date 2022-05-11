@@ -1,7 +1,7 @@
 # Copyright (c) 2014 Cisco Systems, Inc. All rights reserved.
 
 """
-pyaci.utils
+aioci.utils
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains PyACI utility functions.

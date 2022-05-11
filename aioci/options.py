@@ -1,7 +1,7 @@
 # Copyright (c) 2014, 2015 Cisco Systems, Inc. All rights reserved.
 
 """
-pyaci.options
+aioci.options
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains helpers to construct REST API options for PyACI.
@@ -27,14 +27,14 @@ def rsp_subtree_include(level):
     return api_options([('rsp-subtree-include', level)])
 
 
-def rsp_subtree_class(className):
+def rsp_subtree_class(class_name):
     """Query specific"""
-    return api_options([('rsp-subtree', 'full')]) & api_options([('rsp-subtree-class', className)])
+    return api_options([('rsp-subtree', 'full')]) & api_options([('rsp-subtree-class', class_name)])
 
 
-def rsp_prop_include(propType):
+def rsp_prop_include(prop_type):
     """Query ."""
-    return api_options([('rsp-prop-include', propType)])
+    return api_options([('rsp-prop-include', prop_type)])
 
 
 """Query the object with all the children."""
@@ -56,14 +56,14 @@ count = api_options([('rsp-subtree-include', 'count')])
 subscribe = api_options([('subscription', 'yes')])
 
 
-def subtree_class(className):
+def subtree_class(class_name):
     """Query subtree class."""
-    return api_options([('query-target', 'subtree')]) & api_options([('target-subtree-class', className)])
+    return api_options([('query-target', 'subtree')]) & api_options([('target-subtree-class', class_name)])
 
 
-def child_class(className):
+def child_class(class_name):
     """Query child class."""
-    return api_options([('query-target', 'children')]) & api_options([('target-subtree-class', className)])
+    return api_options([('query-target', 'children')]) & api_options([('target-subtree-class', class_name)])
 
 
 def order_by(property):

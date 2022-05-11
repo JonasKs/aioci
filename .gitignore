@@ -1,5 +1,8 @@
 # Documentation
 docs/_build
+.idea/
+# Stub generation stuff
+monkey*
 
 # Tests.
 tests/.coverage

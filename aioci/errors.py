@@ -1,5 +1,5 @@
 """
-pyaci.errors
+aioci.errors
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains the set of PyACI exceptions.

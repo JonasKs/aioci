@@ -1,4 +1,4 @@
-exclude: README.md|meta|tests|docs|examples|static|templates|xml2pyaci
+exclude: README.md|meta|tests|docs|examples|static|templates|xml2aioci|.*\.pyi
 repos:
   - repo: https://github.com/ambv/black
     rev: '22.3.0'
