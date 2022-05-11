@@ -1,5 +1,6 @@
 # Documentation
 docs/_build
+.idea/
 
 # Tests.
 tests/.coverage

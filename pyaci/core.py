@@ -53,10 +53,10 @@ def _element_to_string(e):
 
 
 # TODO: Jonas - Dynamic fetch
-aciMetaDir = os.path.expanduser(os.environ.get('ACI_META_DIR', '~/.aci-meta'))
+aci_meta_dir = os.path.expanduser(os.environ.get('ACI_META_DIR', '~/.aci-meta'))
 
 
-aciMetaFile = os.path.join(aciMetaDir, 'aci-meta.json')
+aciMetaFile = os.path.join(aci_meta_dir, 'aci-meta.json')
 if os.path.exists(aciMetaFile):
     with open(aciMetaFile, 'rb') as f:
         logger.debug('Loading meta information from %s', aciMetaFile)
