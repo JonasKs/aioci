@@ -1,7 +1,7 @@
 # Copyright (c) 2014, 2015 Cisco Systems, Inc. All rights reserved.
 
 """
-pyaci.filters
+aioci.filters
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains helpers to construct REST API filters for PyACI.

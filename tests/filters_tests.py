@@ -11,13 +11,13 @@ paths = [
 for path in paths:
     sys.path.append(os.path.abspath(path))
 
-import pyaci
+import aioci
 
 logging.captureWarnings(True)
 
 
 def testUnary():
-    nt = pyaci.filters.Not(pyaci.filters.Eq('fvATg.pcTag', 50))
+    nt = aioci.filters.Not(aioci.filters.Eq('fvATg.pcTag', 50))
     str(nt).should.equal('not(eq(fvATg.pcTag,50))')
 
 
@@ -31,18 +31,18 @@ def testBinary():
         'Ge': 'ge',
     }
     for name, op in matrix.items():
-        f = getattr(pyaci.filters, name)('fvATg.pcTag', 50)
+        f = getattr(aioci.filters, name)('fvATg.pcTag', 50)
         str(f).should.equal(f'{op}(fvATg.pcTag,50)')
 
 
 def testTernary():
-    bw = pyaci.filters.Bw('fvATg.pcTag', 5, 500)
+    bw = aioci.filters.Bw('fvATg.pcTag', 5, 500)
     str(bw).should.equal('bw(fvATg.pcTag,"5","500")')
 
 
 def testCombinations():
-    f1 = pyaci.filters.Eq('fvATg.name', 'cisco')
-    f2 = pyaci.filters.Eq('fvATg.pcTag', 50)
+    f1 = aioci.filters.Eq('fvATg.name', 'cisco')
+    f2 = aioci.filters.Eq('fvATg.pcTag', 50)
 
     str(~f1).should.equal('not(eq(fvATg.name,"cisco"))')
     str(f1 & f2).should.equal('and(eq(fvATg.name,"cisco"),eq(fvATg.pcTag,50))')

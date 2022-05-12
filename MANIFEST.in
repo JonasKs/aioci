@@ -1,2 +1,0 @@
-recursive-include pyaci/templates *
-recursive-include pyaci/static *

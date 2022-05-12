@@ -17,7 +17,7 @@ paths = [
 for path in paths:
     sys.path.append(os.path.abspath(path))
 
-import pyaci
+import aioci
 
 logging.captureWarnings(True)
 
@@ -26,7 +26,7 @@ url = 'http://praveek6-bld.insieme.local:7000'
 
 class MoTests(unittest.TestCase):
     def setUp(self):
-        self.api = pyaci.Node(url)
+        self.api = aioci.Node(url, aci_meta_file_path='meta/aci-meta.limited.json')
         self.tree = self.api.mit
 
     def testPolUni(self):
@@ -39,7 +39,7 @@ class MoTests(unittest.TestCase):
         tenant = self.tree.polUni().fvTenant('common')
         tenant.rn.should.equal('tn-common')
         tenant.dn.should.equal('uni/tn-common')
-        tenant._url().should_not.be.different_of(url + '/api/mo/' + tenant.dn + '.xml')
+        tenant._url().should_not.be.different_of(f'{url}/api/mo/{tenant.dn}.xml')
 
     def testFvTenantOptionalArgs(self):
         tenant = self.tree.polUni().fvTenant('common', descr='Common tenant')
@@ -57,20 +57,20 @@ class MoTests(unittest.TestCase):
 
     def test_uni_from_dn(self):
         uni = self.api.mit.from_dn('uni')
-        uni.should.be.an(pyaci.core.Mo)
+        uni.should.be.an(aioci.core.Mo)
         uni.class_name.should.equal('polUni')
         uni.dn.should.equal('uni')
 
     def test_tenant_from_dn(self):
         tenant = self.api.mit.from_dn('uni/tn-common')
-        tenant.should.be.an(pyaci.core.Mo)
+        tenant.should.be.an(aioci.core.Mo)
         tenant.class_name.should.equal('fvTenant')
         tenant.name.should.equal('common')
         tenant.dn.should.equal('uni/tn-common')
 
     def test_ep_from_dn(self):
         epp = self.api.mit.from_dn('uni/epp/fv-[uni/tn-infra/ap-access/epg-default]')
-        epp.should.be.an(pyaci.core.Mo)
+        epp.should.be.an(aioci.core.Mo)
         epp.class_name.should.equal('fvEpP')
         epp.epgPKey.should.equal('uni/tn-infra/ap-access/epg-default')
         epp.dn.should.equal('uni/epp/fv-[uni/tn-infra/ap-access/epg-default]')
@@ -96,6 +96,7 @@ class MoTests(unittest.TestCase):
                 """\
         {
           "polUni": {
+            "attributes": {},
             "children": [
               {
                 "fvTenant": {
@@ -131,6 +132,7 @@ class MoTests(unittest.TestCase):
             """\
         {
           "polUni": {
+            "attributes": {},
             "children": [
               {
                 "fvTenant": {
@@ -262,19 +264,19 @@ class MoTests(unittest.TestCase):
     def testNotEnoughNamingProperties(self):
         uni = self.tree.polUni()
         uni.fvBDDef.when.called_with('dontcare').should.throw(
-            pyaci.errors.MoError,
+            aioci.errors.MoError,
             'Class `fvBDDef` requires 2 naming properties, ' 'but only 1 were provided',
         )
 
     def testNoNamingProperties(self):
         uni = self.tree.polUni()
         uni.fvBDDef.when.called_with().should.throw(
-            pyaci.errors.MoError, 'Missing naming property `bdDn` for class `fvBDDef`'
+            aioci.errors.MoError, 'Missing naming property `bdDn` for class `fvBDDef`'
         )
 
     def test_up_too_many(self):
         uni = self.tree.polUni()
-        uni.up.when.called_with(2).should.throw(pyaci.errors.MoError, 'Reached top_root after 1 levels')
+        uni.up.when.called_with(2).should.throw(aioci.errors.MoError, 'Reached top_root after 1 levels')
 
     def test_parse_xml_without_dn(self):
         xml = textwrap.dedent(
@@ -286,7 +288,7 @@ class MoTests(unittest.TestCase):
         )
         (
             self.tree.parse_xml_response.when.called_with(xml).should.throw(
-                pyaci.errors.MoError,
+                aioci.errors.MoError,
                 'Property `dn` not found in element <fvTenant name="mgmt"/>',
             )
         )
@@ -310,21 +312,21 @@ class MoTests(unittest.TestCase):
         )
         (
             self.tree.parse_json_response.when.called_with(text).should.throw(
-                pyaci.errors.MoError, 'Property `dn` not found in dict'
+                aioci.errors.MoError, 'Property `dn` not found in dict'
             )
         )
 
     def test_wrong_xml_element(self):
         et = etree.XML('<fvTenant name="test"/>')
         self.tree.polUni()._from_xml_element.when.called_with(et).should.throw(
-            pyaci.errors.MoError,
+            aioci.errors.MoError,
             'Root element tag `fvTenant` does not match with class `polUni`',
         )
 
 
 class LoginTests(unittest.TestCase):
     def setUp(self):
-        self.login = pyaci.Node('http://localhost').methods.login('jsmith', 'secret')
+        self.login = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json').methods.login('jsmith', 'secret')
 
     def testCreation(self):
         self.login._url().should.equal('http://localhost/api/aaaLogin.xml')
@@ -384,7 +386,7 @@ class LoginTests(unittest.TestCase):
 
 class AppLoginTests(unittest.TestCase):
     def setUp(self):
-        self.login = pyaci.Node('http://localhost').methods.app_login('acme')
+        self.login = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json').methods.app_login('acme')
 
     def testCreation(self):
         self.login._url().should.equal('http://localhost/api/requestAppToken.xml')
@@ -449,7 +451,7 @@ class AppLoginTests(unittest.TestCase):
 
 class LogoutTests(unittest.TestCase):
     def setUp(self):
-        self.node = pyaci.Node('http://localhost')
+        self.node = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json')
         self.login = self.node.methods.login('jsmith', 'secret')
         self.logout = self.node.methods.logout('jsmith')
 
@@ -491,7 +493,7 @@ class LogoutTests(unittest.TestCase):
 
 class LoginRefreshTests(unittest.TestCase):
     def setUp(self):
-        self.login = pyaci.Node('http://localhost').methods.login_refresh()
+        self.login = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json').methods.login_refresh()
 
     def testCreation(self):
         self.login._url().should.equal('http://localhost/api/aaaRefresh.xml')
@@ -506,7 +508,7 @@ class LoginRefreshTests(unittest.TestCase):
 
 class AutoRefreshTests(unittest.TestCase):
     def setUp(self):
-        self.node = pyaci.Node('http://localhost')
+        self.node = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json')
         self.login = self.node.methods.login('admin', 'password', auto_refresh=True)
 
     @httpretty.activate
@@ -564,7 +566,7 @@ class AutoRefreshTests(unittest.TestCase):
 
 class RefreshSubscriptionTests(unittest.TestCase):
     def setUp(self):
-        self.node = pyaci.Node('http://localhost')
+        self.node = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json')
         self.rfs = self.node.methods.refresh_subscriptions('100001')
 
     def test_creation(self):
@@ -588,7 +590,7 @@ class RefreshSubscriptionTests(unittest.TestCase):
 
 class ResolveClassTests(unittest.TestCase):
     def setUp(self):
-        self.resolve = pyaci.Node('http://localhost').methods.resolve_class('fvTenant')
+        self.resolve = aioci.Node('http://localhost', aci_meta_file_path='meta/aci-meta.limited.json').methods.resolve_class('fvTenant')
 
     def testCreation(self):
         self.resolve._url().should.equal('http://localhost/api/class/fvTenant.xml')
@@ -636,7 +638,7 @@ class ResolveClassTests(unittest.TestCase):
 class MethodsTests(unittest.TestCase):
     def setUp(self):
         self.url = 'http://localhost'
-        self.tree = pyaci.Node(self.url).mit
+        self.tree = aioci.Node(self.url, aci_meta_file_path='meta/aci-meta.limited.json').mit
 
     @httpretty.activate
     def test_json_mo_get(self):
@@ -675,7 +677,7 @@ class MethodsTests(unittest.TestCase):
         (httpretty.last_request().path).should.equal('/api/mo/uni/tn-mgmt.json')
 
         result = result[0]
-        result.should.be.a(pyaci.core.Mo)
+        result.should.be.a(aioci.core.Mo)
         result.class_name.should.equal('fvTenant')
         result.descr.should.equal('Test')
 
@@ -701,7 +703,7 @@ class MethodsTests(unittest.TestCase):
         (httpretty.last_request().path).should.equal('/api/mo/uni/tn-mgmt.xml')
 
         result = result[0]
-        result.should.be.a(pyaci.core.Mo)
+        result.should.be.a(aioci.core.Mo)
         result.class_name.should.equal('fvTenant')
         result.descr.should.equal('Test')
 
@@ -728,7 +730,7 @@ class MethodsTests(unittest.TestCase):
         (httpretty.last_request().path).should_not.be.different_of('/api/mo/uni/tn-mgmt.xml?rsp-subtree=full')
 
         result = result[0]
-        result.should.be.a(pyaci.core.Mo)
+        result.should.be.a(aioci.core.Mo)
         result.class_name.should.equal('fvTenant')
         result.descr.should.equal('Test')
 

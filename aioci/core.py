@@ -1,5 +1,5 @@
 """
-pyaci.core
+aioci.core
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains the core classes of PyACI.
@@ -188,10 +188,13 @@ class Node(Api):
 
         if aci_meta_file_path is not None:
             with open(aci_meta_file_path, 'rb') as f:
+                print('lol')
                 logger.debug('Loading meta information from %s', aci_meta_file_path)
                 aci_meta_contents = json_module.load(f)
                 self._aci_class_metas = aci_meta_contents['classes']
         else:
+            aci_url = 'https://apic.static.aa.cust.xcv.net/acimeta/aci-meta.json'
+            aci_class_metas = requests.get(aci_url, verify=False).json()['classes']
             if not aci_class_metas:
                 raise MetaError('ACI meta was not specified !')
             else:

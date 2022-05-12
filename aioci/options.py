@@ -1,7 +1,7 @@
 # Copyright (c) 2014, 2015 Cisco Systems, Inc. All rights reserved.
 
 """
-pyaci.options
+aioci.options
 ~~~~~~~~~~~~~~~~~~~
 
 This module contains helpers to construct REST API options for PyACI.

@@ -16,8 +16,8 @@ paths = [
 for path in paths:
     sys.path.append(os.path.abspath(path))
 
-from pyaci import Node
-from pyaci.utils import distribute_config, get_parent_dn, merge_root, read_only_tree, split_into_rns
+from aioci import Node
+from aioci.utils import distribute_config, get_parent_dn, merge_root, read_only_tree, split_into_rns
 
 logging.captureWarnings(True)
 
@@ -71,7 +71,7 @@ class SplitIntoRnsTests(unittest.TestCase):
 
 
 def test_read_only_tree():
-    n = Node('')
+    n = Node('', aci_meta_file_path='meta/aci-meta.limited.json')
     tree = n.mit
     # pylint: disable=pointless-statement
     tree.read_only_tree.should.be.false
@@ -85,7 +85,7 @@ def test_read_only_tree():
 
 
 def test_distribute_config():
-    n = Node('')
+    n = Node('', aci_meta_file_path='meta/aci-meta.limited.json')
     mit = n.mit
     mit.polUni().fvTenant('cisco')
     mit.polUni().fvTenant('insieme')
@@ -98,7 +98,7 @@ def test_distribute_config():
 
 
 def test_merge_root():
-    n = Node('')
+    n = Node('', aci_meta_file_path='meta/aci-meta.limited.json')
     t1 = n.mit
     t1.polUni().fvTenant('cisco')
     t2 = n.mit
