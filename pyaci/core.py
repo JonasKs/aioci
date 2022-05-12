@@ -56,12 +56,12 @@ def _element_to_string(e):
 aci_meta_dir = os.path.expanduser(os.environ.get('ACI_META_DIR', '~/.aci-meta'))
 
 
-aciMetaFile = os.path.join(aci_meta_dir, 'aci-meta.json')
-if os.path.exists(aciMetaFile):
-    with open(aciMetaFile, 'rb') as f:
-        logger.debug('Loading meta information from %s', aciMetaFile)
-        aciMeta = json_module.load(f)
-        aci_class_metas = aciMeta['classes']
+aci_meta_file = os.path.join(aci_meta_dir, 'aci-meta.json')
+if os.path.exists(aci_meta_file):
+    with open(aci_meta_file, 'rb') as f:
+        logger.debug('Loading meta information from %s', aci_meta_file)
+        aci_meta = json_module.load(f)
+        aci_class_metas = aci_meta['classes']
 else:
     aci_class_metas = dict()
 
@@ -89,9 +89,8 @@ class Api:
                 return accumulator
             else:
                 if accumulator:
-                    relative_url = entity._relative_url
-                    if relative_url:
-                        pass_down = entity._relative_url + '/' + accumulator
+                    if entity._relative_url:
+                        pass_down = f'{entity._relative_url}/{accumulator}'
                     else:
                         pass_down = accumulator
                 else:
@@ -126,7 +125,6 @@ class Api:
         logger.debug('-> %s %s', method, url)
         if need_data:
             logger.debug('%s', data)
-
         req = Request(method.upper(), url, data=data)
         prepped = root_api._session.prepare_request(req)
         # never use certificate for subscription requests
@@ -224,13 +222,13 @@ class Node(Api):
             raise Exception('APIC-cookie NOT found.. Make sure you have logged in.')
         return '{}/socket{}'.format(self._url.replace('https', 'wss').replace('http', 'ws'), token)
 
-    def useX509CertAuth(self, userName, certName, keyFile, appcenter=False):
-        with open(keyFile) as f:
+    def useX509CertAuth(self, user_name, cert_name, key_file, appcenter=False):
+        with open(key_file) as f:
             key = f.read()
         if appcenter:
-            self._x509Dn = self.mit.polUni().aaaUserEp().aaaAppUser(userName).aaaUserCert(certName).dn
+            self._x509Dn = self.mit.polUni().aaaUserEp().aaaAppUser(user_name).aaaUserCert(cert_name).dn
         else:
-            self._x509Dn = self.mit.polUni().aaaUserEp().aaaUser(userName).aaaUserCert(certName).dn
+            self._x509Dn = self.mit.polUni().aaaUserEp().aaaUser(user_name).aaaUserCert(cert_name).dn
         self._x509Key = load_privatekey(FILETYPE_PEM, key)
 
     def toggle_test_api(self, should_enable, dme='policymgr'):
@@ -259,10 +257,10 @@ class Node(Api):
         logger.info(f'URL {self.web_socket_url} user_proxy {self._user_proxies}')
         if self._user_proxies:
             try:
-                proxyUrl = self._user_proxies.get('https', self._user_proxies.get('http', None))
-                if proxyUrl:
-                    run_forever_kwargs['http_proxy_host'] = urlparse(proxyUrl).netloc.split(':')[0]
-                    run_forever_kwargs['http_proxy_port'] = int(urlparse(proxyUrl).netloc.split(':')[1])
+                proxy_url = self._user_proxies.get('https', self._user_proxies.get('http', None))
+                if proxy_url:
+                    run_forever_kwargs['http_proxy_host'] = urlparse(proxy_url).netloc.split(':')[0]
+                    run_forever_kwargs['http_proxy_port'] = int(urlparse(proxy_url).netloc.split(':')[1])
                     run_forever_kwargs['proxy_type'] = 'http'
             except ValueError:
                 logger.info(f'http(s) proxy unavailable for {self.web_socket_url}')
@@ -292,13 +290,13 @@ class Node(Api):
             mos = self.mit.parse_xml_response(message, subscription_ids=subscription_ids)
         else:
             mos = self.mit.parse_json_response(message, subscription_ids=subscription_ids)
-        for subscriptionId in subscription_ids:
+        for subscription_id in subscription_ids:
             for mo in mos:
-                self._ws_mos[subscriptionId].append(mo)
-            if subscriptionId not in self._ws_events:
-                self._ws_events[subscriptionId] = Event()
+                self._ws_mos[subscription_id].append(mo)
+            if subscription_id not in self._ws_events:
+                self._ws_events[subscription_id] = Event()
             if mos:
-                self._ws_events[subscriptionId].set()
+                self._ws_events[subscription_id].set()
 
     def _handle_ws_error(self, error):
         logger.error('Encountered WebSocket error: %s', error)
@@ -311,19 +309,19 @@ class Node(Api):
         self._ws_status = WS_CLOSED
         self._ws_ready.set()
 
-    def wait_for_ws_mo(self, subscriptionId, timeout=None):
+    def wait_for_ws_mo(self, subscription_id, timeout=None):
         logger.info('Waiting for the WebSocket MOs')
-        if subscriptionId not in self._ws_events:
-            self._ws_events[subscriptionId] = Event()
-        return self._ws_events[subscriptionId].wait(timeout)
+        if subscription_id not in self._ws_events:
+            self._ws_events[subscription_id] = Event()
+        return self._ws_events[subscription_id].wait(timeout)
 
-    def has_ws_mo(self, subscriptionId):
-        return len(self._ws_mos[subscriptionId]) > 0
+    def has_ws_mo(self, subscription_id):
+        return len(self._ws_mos[subscription_id]) > 0
 
-    def pop_ws_mo(self, subscriptionId):
-        mo = self._ws_mos[subscriptionId].popleft()
-        if not self.has_ws_mo(subscriptionId):
-            self._ws_events[subscriptionId].clear()
+    def pop_ws_mo(self, subscription_id):
+        mo = self._ws_mos[subscription_id].popleft()
+        if not self.has_ws_mo(subscription_id):
+            self._ws_events[subscription_id].clear()
         return mo
 
     @property
@@ -553,9 +551,9 @@ class Mo(Api):
         context = etree.iterparse(BytesIO(xml), events=('end',), tag='imdata')
         mos = []
         event, root = next(context)
-        sIds = root.get('subscriptionId', '')
-        if sIds:
-            subscription_ids.extend([str(x) for x in sIds.split(',')])
+        s_ids = root.get('subscriptionId', '')
+        if s_ids:
+            subscription_ids.extend([str(x) for x in s_ids.split(',')])
         for element in root.iterchildren():
             if 'dn' not in element.attrib:
                 raise MoError(f'Property `dn` not found in element {_element_to_string(element)}')
@@ -577,7 +575,7 @@ class Mo(Api):
         for element in response['imdata']:
             name, value = next(iter(element.items()))
             if 'dn' not in value['attributes']:
-                raise MoError('Property `dn` not found in dict {}'.format(value['attributes']))
+                raise MoError(f'Property `dn` not found in dict {value["attributes"]}')
             mo = self.from_dn(value['attributes']['dn'])
             mo._from_object_dict(element)
             mos.append(mo)
@@ -644,9 +642,7 @@ class Mo(Api):
         data[self._class_name] = object_data
 
         attributes = {k: v for k, v in self._properties.items() if v is not None}
-        if attributes:
-            object_data['attributes'] = attributes
-
+        object_data['attributes'] = attributes if attributes else {}
         if self._children:
             object_data['children'] = []
 
@@ -800,10 +796,10 @@ class LoginMethod(Api):
                 root._login = {}
                 root._login['version'] = doc['imdata']['aaaLogin']['@version']
                 root._login['user_name'] = doc['imdata']['aaaLogin']['@userName']
-                lastLogin = int(time.time())
-                root._login['last_login_time'] = lastLogin
+                last_login = int(time.time())
+                root._login['last_login_time'] = last_login
                 root._login['next_refresh_before'] = (
-                    lastLogin - DELTA + int(doc['imdata']['aaaLogin']['@refreshTimeoutSeconds'])
+                    last_login - DELTA + int(doc['imdata']['aaaLogin']['@refreshTimeoutSeconds'])
                 )
                 logger.debug(root._login)
                 if root._auto_refresh:
@@ -944,10 +940,10 @@ class ChangeCertMethod(Api):
     def _relative_url(self):
         return 'changeSelfX509Cert'
 
-    def __call__(self, userName, certName, certFile):
-        self._properties['userName'] = userName
-        self._properties['name'] = certName
-        with open(certFile) as f:
+    def __call__(self, user_name, cert_name, cert_file):
+        self._properties['userName'] = user_name
+        self._properties['name'] = cert_name
+        with open(cert_file) as f:
             self._properties['data'] = f.read()
         return self
 
@@ -1027,7 +1023,7 @@ class RefreshSubscriptionsMethod(Api):
         return 'subscriptionRefresh'
 
     def __call__(self, ids):
-        """ids are comma separate subscription ids"""
+        """Ids are comma separate subscription ids"""
         self._ids = ids
         return self
 
@@ -1041,8 +1037,8 @@ class UploadPackageMethod(Api):
     def _relative_url(self):
         return 'ppi/node/mo'
 
-    def __call__(self, packageFile):
-        self._package_file = packageFile
+    def __call__(self, package_file):
+        self._package_file = package_file
         return self
 
     def post(self, format='xml'):
@@ -1082,7 +1078,7 @@ class ResolveClassMethod(Api):
         if auto_page:
             # TODO: Subscription is not supported with auto_page option.
             if 'subscription' in kwargs:
-                raise UserError('Subscription is not suppored with auto_page option')
+                raise UserError('Subscription is not supported with auto_page option')
             logger.debug('Auto paginating query with page size of %d', page_size)
             current_page = 0
             results = []
@@ -1100,7 +1096,7 @@ class ResolveClassMethod(Api):
                 if len(result) < page_size:
                     break
                 current_page += 1
-            result = [mo for resultList in results for mo in resultList]
+            result = [mo for result_list in results for mo in result_list]
         else:
             response = super().get(format, **kwargs)
             if format == 'json':
